@@ -506,10 +506,11 @@ function getLevelNum(){const i=LEVELS.findIndex(l=>state.xp>=l.min&&state.xp<=l.
 function goTo(pageId){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg = document.getElementById(pageId);
+  if(!pg){ console.error('Page not found:', pageId); return; }
   pg.classList.add('active');
-  // scroll page-body to top
   const body = pg.querySelector('.page-body');
   if(body) body.scrollTop = 0;
+  if(pageId==='pg-score') showScorePage();
 }
 
 function startGame(){
@@ -758,12 +759,7 @@ function showScorePage(){
   }
 }
 
-// Override goTo to trigger score rendering when navigating to score page
-const _origGoTo = goTo;
-function goTo(pageId){
-  _origGoTo(pageId);
-  if(pageId==='pg-score') showScorePage();
-}
+// goTo handles score rendering directly (merged above)
 
 function awardXP(q){
   state.completed.push(q.id);state.xp+=q.xpReward;saveState();
