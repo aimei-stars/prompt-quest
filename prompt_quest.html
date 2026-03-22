@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#0e0a1f;color:#f0e8ff;min-height:100vh;overflow-x:hidden;}
+.screen{display:none;}
+.screen.active{display:block;}
+body::before{content:'';position:fixed;inset:0;background-image:
+  radial-gradient(1px 1px at 8% 12%,rgba(255,255,255,.5) 0%,transparent 100%),
+  radial-gradient(1px 1px at 25% 65%,rgba(255,255,255,.4) 0%,transparent 100%),
+  radial-gradient(1px 1px at 50% 20%,rgba(255,255,255,.6) 0%,transparent 100%),
+  radial-gradient(1px 1px at 72% 50%,rgba(255,255,255,.3) 0%,transparent 100%),
+  radial-gradient(1px 1px at 88% 8%,rgba(255,255,255,.5) 0%,transparent 100%),
+  radial-gradient(1px 1px at 18% 88%,rgba(255,255,255,.4) 0%,transparent 100%),
+  radial-gradient(1px 1px at 63% 78%,rgba(255,255,255,.5) 0%,transparent 100%),
+  radial-gradient(2px 2px at 5% 48%,rgba(245,200,66,.3) 0%,transparent 100%),
+  radial-gradient(2px 2px at 94% 72%,rgba(180,120,255,.3) 0%,transparent 100%);
+  pointer-events:none;z-index:0;}
+#title-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;z-index:1;}
+.title-glow{font-family:'Cinzel Decorative',cursive;font-size:clamp(1.8rem,7vw,4rem);color:#f5c842;text-shadow:0 0 30px rgba(245,200,66,.7),0 0 70px rgba(245,200,66,.3);line-height:1.2;margin-bottom:.4rem;animation:tpulse 3s ease-in-out infinite;}
+@keyframes tpulse{0%,100%{text-shadow:0 0 30px rgba(245,200,66,.7),0 0 70px rgba(245,200,66,.3);}50%{text-shadow:0 0 55px rgba(245,200,66,1),0 0 110px rgba(245,200,66,.5);}}
+.title-sub{font-size:1rem;color:#b89eff;margin-bottom:2rem;letter-spacing:.05em;}
+.wizard-emoji{font-size:5rem;animation:float 4s ease-in-out infinite;display:block;margin-bottom:1.5rem;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+.name-label{font-size:.85rem;color:#b89eff;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.4rem;display:block;}
+input.name-input{background:rgba(255,255,255,.07);border:2px solid #6c3fc5;border-radius:12px;padding:.7rem 1.2rem;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;color:#f0e8ff;text-align:center;width:260px;outline:none;transition:border-color .2s;margin-bottom:1.2rem;display:block;}
+input.name-input:focus{border-color:#f5c842;}
+input.name-input::placeholder{color:rgba(240,232,255,.3);}
+.btn-gold{background:linear-gradient(135deg,#f5c842,#e8a800);color:#1a0a3a;border:none;border-radius:14px;padding:.85rem 2.2rem;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 20px rgba(245,200,66,.4);}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(245,200,66,.65);}
+.btn-ghost{background:rgba(108,63,197,.2);color:#d0b8ff;border:2px solid #6c3fc5;border-radius:12px;padding:.55rem 1.3rem;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:.8rem;}
+.btn-ghost:hover{background:rgba(108,63,197,.4);}
+#map-screen{min-height:100vh;padding:1.5rem;max-width:800px;margin:0 auto;position:relative;z-index:1;}
+.hud{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);border:1px solid rgba(108,63,197,.4);border-radius:16px;padding:.7rem 1.2rem;margin-bottom:1.5rem;}
+.hud-name{font-weight:800;color:#f5c842;font-size:.95rem;}
+.xp-label{font-size:.72rem;color:#b89eff;margin-top:2px;}
+.xp-bar-wrap{background:rgba(255,255,255,.1);border-radius:99px;height:7px;width:110px;overflow:hidden;margin-top:3px;}
+.xp-bar{background:linear-gradient(90deg,#6c3fc5,#f5c842);height:100%;border-radius:99px;transition:width .7s ease;}
+.level-badge{background:rgba(245,200,66,.12);border:1px solid #f5c842;border-radius:99px;padding:.2rem .8rem;font-size:.78rem;font-weight:800;color:#f5c842;}
+.map-heading{font-family:'Cinzel Decorative',cursive;font-size:1.2rem;color:#b89eff;text-align:center;margin-bottom:1.5rem;}
+.quest-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;}
+.quest-card{background:rgba(255,255,255,.04);border:2px solid rgba(108,63,197,.3);border-radius:18px;padding:1.1rem;cursor:pointer;transition:transform .2s,border-color .2s,background .2s;text-align:center;position:relative;}
+.quest-card:hover:not(.locked){transform:translateY(-4px);border-color:#f5c842;background:rgba(245,200,66,.04);}
+.quest-card.locked{opacity:.35;cursor:not-allowed;}
+.quest-card.completed{border-color:#3fc57a;background:rgba(63,197,122,.04);}
+.q-icon{font-size:2.2rem;margin-bottom:.4rem;display:block;}
+.q-name{font-weight:800;font-size:.9rem;color:#f0e8ff;margin-bottom:.25rem;}
+.q-desc{font-size:.74rem;color:#b89eff;line-height:1.4;}
+.q-tag{margin-top:.5rem;font-size:.7rem;font-weight:700;}
+.q-tag.done{color:#3fc57a;}
+.q-tag.locked-t{color:#4a3a6a;}
+.q-tag.ready{color:#f5c842;}
+.lock-icon{position:absolute;top:7px;right:9px;font-size:.9rem;}
+#quest-screen{min-height:100vh;padding:1.5rem;max-width:740px;margin:0 auto;position:relative;z-index:1;}
+.qhdr{display:flex;align-items:center;gap:.8rem;margin-bottom:1.2rem;}
+.back-btn{background:rgba(255,255,255,.06);border:1px solid rgba(108,63,197,.4);border-radius:10px;padding:.42rem .8rem;color:#b89eff;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .2s;}
+.back-btn:hover{background:rgba(108,63,197,.3);}
+.qhdr-title{flex:1;}
+.qhdr-title h2{font-family:'Cinzel Decorative',cursive;font-size:1rem;color:#f5c842;}
+.qhdr-title p{font-size:.75rem;color:#b89eff;}
+.lesson-card{background:rgba(108,63,197,.1);border:1px solid rgba(108,63,197,.3);border-radius:16px;padding:1.1rem 1.3rem;margin-bottom:1.1rem;}
+.lesson-card h3{font-size:.92rem;color:#d0b8ff;font-weight:800;margin-bottom:.5rem;}
+.lesson-card p{font-size:.86rem;color:#c0b0e0;line-height:1.65;}
+.spell-box{background:rgba(0,0,0,.3);border:1px dashed rgba(245,200,66,.4);border-radius:10px;padding:.65rem .9rem;margin-top:.8rem;font-size:.8rem;color:#f5c842;font-weight:700;line-height:1.7;}
+.spell-box span{color:#e0caff;font-weight:400;}
+.anl-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.7rem;}
+.anl-box{background:rgba(0,0,0,.2);border:1px solid rgba(108,63,197,.22);border-radius:10px;padding:.55rem .75rem;}
+.anl-box .anl-lbl{font-size:.68rem;font-weight:800;color:#9b7ede;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem;}
+.anl-box p{font-size:.76rem;color:#c0b0e0;line-height:1.4;}
+.challenge-panel{background:rgba(255,255,255,.03);border:1px solid rgba(108,63,197,.22);border-radius:16px;padding:1.1rem;margin-bottom:1rem;}
+.challenge-panel h3{font-size:.88rem;font-weight:800;color:#d0b8ff;margin-bottom:.5rem;}
+.mission-box{background:rgba(0,0,0,.25);border-left:3px solid #f5c842;border-radius:0 10px 10px 0;padding:.7rem .9rem;font-size:.86rem;color:#e0d0ff;line-height:1.6;margin-bottom:.8rem;}
+.tabs{display:flex;gap:.4rem;margin-bottom:0;}
+.tab-btn{background:rgba(255,255,255,.05);border:1px solid rgba(108,63,197,.3);border-bottom:none;border-radius:8px 8px 0 0;padding:.38rem .85rem;font-size:.78rem;font-weight:700;color:#9b7ede;cursor:pointer;transition:background .2s;}
+.tab-btn.active{background:rgba(108,63,197,.25);color:#d0b8ff;}
+textarea.prompt-area{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(108,63,197,.4);border-radius:0 12px 12px 12px;padding:.75rem .9rem;font-family:'Nunito',sans-serif;font-size:.88rem;color:#f0e8ff;resize:vertical;min-height:85px;outline:none;transition:border-color .2s;}
+textarea.prompt-area:focus{border-color:#f5c842;}
+textarea.prompt-area::placeholder{color:rgba(240,232,255,.2);}
+.action-row{display:flex;align-items:center;gap:.7rem;margin-top:.7rem;flex-wrap:wrap;}
+.hint-btn{background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.3);border-radius:10px;padding:.38rem .85rem;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:700;color:#f5c842;cursor:pointer;transition:background .2s;}
+.hint-btn:hover{background:rgba(245,200,66,.2);}
+.char-cnt{font-size:.72rem;color:#5a4a8a;margin-left:auto;}
+.resp-panel{background:rgba(0,0,0,.32);border:1px solid rgba(108,63,197,.28);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:.9rem;min-height:70px;}
+.resp-label{font-size:.7rem;font-weight:800;color:#9b7ede;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem;display:flex;align-items:center;gap:.3rem;}
+.resp-text{font-size:.86rem;color:#d8caff;line-height:1.65;}
+.dots span{display:inline-block;animation:dot 1.2s infinite;width:6px;height:6px;border-radius:50%;background:#9b7ede;margin:0 2px;}
+.dots span:nth-child(2){animation-delay:.2s;}.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes dot{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+.score-panel{background:rgba(255,255,255,.03);border:1px solid rgba(63,197,122,.28);border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;}
+.score-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;}
+.score-hdr h3{font-size:.9rem;font-weight:800;color:#3fc57a;}
+.total-score{font-family:'Cinzel Decorative',cursive;font-size:1.5rem;color:#f5c842;}
+.crit-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem;}
+.crit-item{background:rgba(0,0,0,.22);border-radius:8px;padding:.5rem .65rem;}
+.crit-lbl{font-size:.7rem;color:#9b7ede;font-weight:700;margin-bottom:.2rem;}
+.crit-bar-wrap{background:rgba(255,255,255,.08);border-radius:99px;height:5px;width:100%;overflow:hidden;margin-bottom:.22rem;}
+.crit-bar{height:100%;border-radius:99px;transition:width .6s .2s;}
+.crit-val{font-size:.76rem;color:#d0b8ff;font-weight:700;}
+.feedback-box{font-size:.82rem;color:#c0b0e0;line-height:1.55;background:rgba(0,0,0,.18);border-radius:8px;padding:.6rem .8rem;}
+.cel-overlay{display:none;position:fixed;inset:0;background:rgba(14,10,31,.93);z-index:100;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.cel-overlay.show{display:flex;}
+.cel-emoji{font-size:5rem;animation:bounce 1s ease-in-out infinite;display:block;margin-bottom:.8rem;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+.cel-title{font-family:'Cinzel Decorative',cursive;font-size:2rem;color:#f5c842;margin-bottom:.4rem;}
+.cel-sub{font-size:.95rem;color:#b89eff;margin-bottom:.3rem;}
+.xp-gained{font-size:1.2rem;font-weight:800;color:#3fc57a;margin-bottom:1.5rem;}
+#howto-screen{min-height:100vh;padding:2rem;max-width:660px;margin:0 auto;position:relative;z-index:1;}
+#howto-screen h2{font-family:'Cinzel Decorative',cursive;font-size:1.4rem;color:#f5c842;margin-bottom:1.5rem;text-align:center;}
+.hw-card{background:rgba(108,63,197,.1);border:1px solid rgba(108,63,197,.3);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:.8rem;}
+.hw-card h3{font-size:.9rem;color:#d0b8ff;font-weight:800;margin-bottom:.35rem;}
+.hw-card p{font-size:.83rem;color:#c0b0e0;line-height:1.55;}
+.spell-parts{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;}
+.spell-part{background:rgba(0,0,0,.25);border-radius:8px;padding:.45rem .6rem;font-size:.76rem;color:#d0b8ff;font-weight:700;border-left:3px solid #6c3fc5;}
+.tip-panel{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.25);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:.8rem;}
+.tip-panel p{font-size:.83rem;color:#e0c880;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen" class="screen active">
+  <span class="wizard-emoji">🧙‍♂️</span>
+  <h1 class="title-glow">Prompt Quest</h1>
+  <p class="title-sub">Master the Ancient Art of Spell Crafting (a.k.a. Prompt Engineering)</p>
+  <label class="name-label" for="heroName">Enter your wizard name</label>
+  <input id="heroName" class="name-input" type="text" placeholder="e.g. Zara the Wise" maxlength="20">
+  <button class="btn-gold" onclick="startGame()">Begin Your Quest ✨</button>
+  <br>
+  <button class="btn-ghost" onclick="showScreen('howto-screen')">📜 How to Play</button>
+</div>
+
+<!-- HOW TO PLAY SCREEN -->
+<div id="howto-screen" class="screen">
+  <h2>How to Play</h2>
+  <div class="hw-card">
+    <h3>🎯 Your Mission</h3>
+    <p>You are a Prompt Wizard! Your magic spells are called <strong>prompts</strong> — instructions you give to an AI. The better your spell, the more powerful the result!</p>
+  </div>
+  <div class="hw-card">
+    <h3>🔮 The 5 Spell Parts</h3>
+    <p>Great prompts are made of ingredients, just like potions:</p>
+    <div class="spell-parts">
+      <div class="spell-part">🎭 Role — who the AI should be</div>
+      <div class="spell-part">🎯 Task — what you want</div>
+      <div class="spell-part">📖 Context — background info</div>
+      <div class="spell-part">⚙️ Format — how to show it</div>
+      <div class="spell-part">📏 Constraint — any limits</div>
+    </div>
+  </div>
+  <div class="hw-card">
+    <h3>🗺️ Quest Map</h3>
+    <p>There are 5 dungeons to conquer, each teaching one spell ingredient. Complete them in order to unlock the boss challenge. Earn XP and level up your wizard!</p>
+  </div>
+  <div class="tip-panel">
+    <p>💡 <strong>Pro tip:</strong> Vague spells get vague results. Specific spells create MAGIC! After each attempt, you can see AI feedback and try to improve your score.</p>
+  </div>
+  <div style="text-align:center;margin-top:1rem;">
+    <button class="btn-gold" onclick="showScreen('map-screen')">← Back to Map</button>
+  </div>
+</div>
+
+<!-- MAP SCREEN -->
+<div id="map-screen" class="screen">
+  <div class="hud">
+    <div>
+      <div class="hud-name" id="hud-name">🧙 Wizard</div>
+      <div class="xp-label">XP: <span id="hud-xp">0</span> / <span id="hud-xp-max">100</span></div>
+      <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar" style="width:0%"></div></div>
+    </div>
+    <div style="text-align:right;">
+      <div class="level-badge" id="level-badge">Level 1 Apprentice</div>
+      <div style="font-size:.72rem;color:#7a5fc8;margin-top:4px;"><span id="completed-count">0</span>/5 Dungeons Cleared</div>
+    </div>
+  </div>
+  <div class="map-heading">⚔️ Choose Your Dungeon</div>
+  <div class="quest-grid" id="quest-grid"></div>
+</div>
+
+<!-- QUEST SCREEN -->
+<div id="quest-screen" class="screen">
+  <div class="qhdr">
+    <button class="back-btn" onclick="showScreen('map-screen')">← Map</button>
+    <div class="qhdr-title">
+      <h2 id="q-screen-title">Quest Title</h2>
+      <p id="q-screen-sub">Skill: ...</p>
+    </div>
+  </div>
+  <!-- Lesson -->
+  <div class="lesson-card" id="lesson-card"></div>
+  <!-- Challenge -->
+  <div class="challenge-panel">
+    <h3>⚔️ Your Challenge</h3>
+    <div class="mission-box" id="mission-text">Loading...</div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('write')" id="tab-write">✍️ Write Prompt</button>
+      <button class="tab-btn" onclick="switchTab('example')" id="tab-ex">💡 See Example</button>
+    </div>
+    <div id="tab-write-content">
+      <textarea class="prompt-area" id="prompt-input" placeholder="Cast your spell here... type your prompt!" oninput="updateCharCount()" rows="4"></textarea>
+      <div class="action-row">
+        <button class="hint-btn" onclick="showHint()">🔮 Hint</button>
+        <button class="btn-gold" onclick="castSpell()" id="cast-btn">🪄 Cast Spell!</button>
+        <span class="char-cnt" id="char-cnt">0 chars</span>
+      </div>
+      <div id="hint-box" style="display:none;background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.25);border-radius:10px;padding:.6rem .8rem;margin-top:.6rem;font-size:.82rem;color:#e0c880;line-height:1.5;"></div>
+    </div>
+    <div id="tab-ex-content" style="display:none;">
+      <div style="background:rgba(0,0,0,.25);border-radius:10px;padding:.8rem 1rem;margin-top:.3rem;" id="example-prompt-box"></div>
+    </div>
+  </div>
+  <!-- Response -->
+  <div class="resp-panel" id="resp-panel" style="display:none;">
+    <div class="resp-label">🌟 The AI Oracle Responds</div>
+    <div class="resp-text" id="resp-text"></div>
+  </div>
+  <!-- Score -->
+  <div class="score-panel" id="score-panel" style="display:none;">
+    <div class="score-hdr">
+      <h3>📊 Spell Power Rating</h3>
+      <div class="total-score" id="total-score-disp">--</div>
+    </div>
+    <div class="crit-grid" id="crit-grid"></div>
+    <div class="feedback-box" id="feedback-text"></div>
+    <div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap;">
+      <button class="hint-btn" onclick="tryAgain()">🔁 Try Again</button>
+      <button class="btn-gold" onclick="nextQuest()">Next Dungeon →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CELEBRATION OVERLAY -->
+<div class="cel-overlay" id="cel-overlay">
+  <span class="cel-emoji" id="cel-emoji">🎉</span>
+  <div class="cel-title" id="cel-title">Spell Cast!</div>
+  <div class="cel-sub" id="cel-sub"></div>
+  <div class="xp-gained" id="xp-gained-txt"></div>
+  <button class="btn-gold" onclick="dismissCelebration()">Continue ✨</button>
+</div>
+
+<script>
+// ========== DATA ==========
+const QUESTS = [
+  {
+    id: 0,
+    icon: "🎯",
+    name: "The Vagueness Dungeon",
+    skill: "Specificity",
+    desc: "Learn why vague prompts cast weak spells",
+    xpReward: 50,
+    lessonTitle: "Spell Ingredient #1: Be Specific",
+    lessonBody: "The first rule of Prompt Magic: vague spells get vague results. If you tell the Oracle 'write something about dogs', it has no idea what you want! But if you say 'write 3 fun facts about Golden Retrievers for a 6th grader', the Oracle knows exactly what to do.",
+    formula: "❌ Vague: <span>'Tell me about animals'</span>\n✅ Specific: <span>'Give me 5 surprising facts about octopuses that a 6th grader would love'</span>",
+    analogy1: { title: "Vending Machine", body: "Pressing 'B3' gets you chips. Pressing nothing gets you nothing. Specificity is like knowing exactly which button to press.", hides: "Hides: You can't over-specify a vending machine; AI sometimes does better with less." },
+    analogy2: { title: "Google Search", body: "Searching 'dog' gives millions of results. Searching 'best dogs for apartments under 20lbs' gives you what you actually want.", hides: "Hides: Prompts can be more conversational than search queries." },
+    mission: "The King has lost his crown somewhere in the castle! Your mission: write a prompt asking the Oracle to help find it. Make your prompt SPECIFIC — mention where to look, what the crown looks like, and what kind of answer you want.",
+    hint: "Try starting with 'I am looking for...' and include: (1) what the crown looks like, (2) which rooms to search, (3) how long your answer should be.",
+    examplePrompt: {
+      label: "Specific Spell Example:",
+      text: "I am looking for a golden crown with three red rubies. Please suggest 5 specific hiding spots in a medieval castle (throne room, kitchen, treasury, guard quarters, library) and explain WHY someone might hide it in each spot. Keep each explanation to 2 sentences.",
+      explain: "Notice: it names exactly what was lost, where to look, how many suggestions, and how long each answer should be. No guesswork for the Oracle!"
+    },
+    scoreKeys: ["Clarity", "Detail", "Focus"],
+    simResponse: "I've searched the castle carefully! Based on your description of the golden crown with three red rubies, I'd check these spots: (1) The Treasury — the most logical secure location, but also the first place a thief would look. (2) Behind the throne tapestry — royalty sometimes hides valuables in plain sight. (3) The royal kitchen pantry — thieves rarely search there. (4) Under the grand staircase — a classic hiding spot with loose floorboards. (5) Inside the library's secret compartment — many castles had these behind bookshelves. I hope the King finds his crown soon! 👑"
+  },
+  {
+    id: 1,
+    icon: "🎭",
+    name: "The Role Realm",
+    skill: "Role Assignment",
+    desc: "Give the AI a character to play",
+    xpReward: 60,
+    lessonTitle: "Spell Ingredient #2: Assign a Role",
+    lessonBody: "Wizards know that a spell works better when you tell the Oracle WHO to be. If you ask a doctor, a teacher, and a comedian the same question — you'll get very different, useful answers! Adding a role to your prompt unlocks special knowledge and a perfect tone for your need.",
+    formula: "🎭 Role Spell: <span>'You are a [role]. [Your task]...'</span>\n✨ Example: <span>'You are a friendly science teacher explaining to 6th graders. Explain why the sky is blue in 3 simple sentences.'</span>",
+    analogy1: { title: "Video Game NPCs", body: "In a game, the blacksmith talks about swords, the wizard about spells. Roles make characters give the RIGHT information for their expertise.", hides: "Hides: AI doesn't truly 'become' the role — it changes style, not actual knowledge accuracy." },
+    analogy2: { title: "Hiring an Expert", body: "You wouldn't ask your math teacher to fix your bike. Roles are like hiring the right expert for the right job.", hides: "Hides: One AI can 'play' many roles, unlike real experts who specialize." },
+    mission: "Your dragon is sick and won't eat! Write a prompt giving the Oracle a ROLE to play (like a Dragon Veterinarian, or a Wise Dragon Elder) and ask for advice on how to help your dragon feel better. Remember to include role + task!",
+    hint: "Start with 'You are a [role].' then add your question. Make the role specific — 'veterinarian who specializes in magical creatures' is better than just 'vet'!",
+    examplePrompt: {
+      label: "Role Assignment Example:",
+      text: "You are a magical creature veterinarian with 20 years of experience treating dragons. My dragon Ember has been refusing to eat for 3 days and seems tired. Please give me a list of 4 possible reasons why and 1 home remedy for each reason. Use friendly, easy-to-understand language.",
+      explain: "The role (magical creature vet + 20 years exp) sets the expertise. The task is clear. The format (4 reasons + 1 remedy each) tells the Oracle exactly what to produce!"
+    },
+    scoreKeys: ["Role Clarity", "Task Clarity", "Tone Match"],
+    simResponse: "🐉 Dragon Health Assessment from Dr. Scalewing, Magical Veterinarian:\n\nHello! Based on your description of Ember's symptoms, here are 4 possible causes:\n\n1. VOLCANIC INDIGESTION — Dragons sometimes eat too much ash. Remedy: Give Ember a cup of glacier water mixed with powdered moonstone.\n\n2. SEASONAL SCALE MOLT — Growing new scales takes enormous energy. Remedy: Offer smaller, high-protein meals like gryphon steaks every 2 hours.\n\n3. LONELINESS — Dragons are social creatures! Remedy: Spend 30 extra minutes playing with Ember each day.\n\n4. SMOKE BUILDUP — Their fire glands may be clogged. Remedy: Encourage Ember to breathe fire toward a large rock 10 times each morning.\n\nIf symptoms persist for 5 more days, please bring Ember to our clinic! 🏥"
+  },
+  {
+    id: 2,
+    icon: "📖",
+    name: "The Context Caverns",
+    skill: "Providing Context",
+    desc: "Give background so the AI understands you",
+    xpReward: 70,
+    lessonTitle: "Spell Ingredient #3: Add Context",
+    lessonBody: "Imagine texting a friend 'What should I wear?' — they have NO idea where you're going! Context is the background information that helps the Oracle give you a perfectly matched answer. The more relevant context you give, the more useful the response!",
+    formula: "📖 Context Spell: <span>'Given that [context], please [task]...'</span>\n✨ Example: <span>'Given that I am a shy 11-year-old who loves science but hates speaking in front of people, help me prepare for a science presentation.'</span>",
+    analogy1: { title: "Giving Directions", body: "If someone asks 'How do I get there?' you need to know WHERE THEY ARE first. Context is your starting location.", hides: "Hides: Too much irrelevant context can confuse the Oracle, just like giving your full life story when someone just needs directions." },
+    analogy2: { title: "A Doctor's Visit", body: "A doctor asks about your symptoms, age, and history BEFORE prescribing. Context lets them give safe, tailored advice.", hides: "Hides: AI can't verify whether your context is accurate — it trusts what you tell it." },
+    mission: "A mysterious wizard lives in the mountains and receives letters from people needing advice. Write a prompt giving the Oracle CONTEXT about who YOU are (age, interests, a problem you have) and asking for personalized advice. The Oracle needs to know your story!",
+    hint: "Include: (1) Who you are — age, grade, what you like. (2) What the specific problem or situation is. (3) What kind of advice or response you want. More context = better spell!",
+    examplePrompt: {
+      label: "Context-Rich Example:",
+      text: "I am a 11-year-old who loves video games, especially Minecraft. I am in 6th grade and I have a science project due in 2 weeks about ecosystems. I work best with visual examples and I get bored by long textbook explanations. Given this context, please suggest 3 creative ways I could present my ecosystem project that would be fun for me and impressive to my teacher.",
+      explain: "Age, grade, interests, learning style, deadline — all this context lets the Oracle give advice that actually fits this specific student, not generic advice for anyone."
+    },
+    scoreKeys: ["Context Given", "Relevance", "Personalization Ask"],
+    simResponse: "🏔️ The Mountain Wizard responds:\n\nAh, a young 6th-grade Minecraft fan with an ecosystem project! Here are 3 perfect project ideas for you:\n\n🎮 IDEA 1 — Build Your Ecosystem in Minecraft: Create a biome in Minecraft and take screenshots showing the food chain, producers, consumers, and decomposers. Label each screenshot. Teachers LOVE creative approaches!\n\n🗺️ IDEA 2 — Ecosystem Map Poster: Draw a colorful visual map (no reading required!) showing how energy flows through your ecosystem with arrows and emoji-style drawings.\n\n🎬 IDEA 3 — Mini Documentary: Record a 2-minute video of yourself explaining your ecosystem using Minecraft gameplay as your backdrop. Visual, engaging, and unique!\n\nMy recommendation: Idea 1 plays to your strengths and will make your presentation unforgettable. Good luck, young wizard! ⭐"
+  },
+  {
+    id: 3,
+    icon: "📏",
+    name: "The Format Fortress",
+    skill: "Output Format",
+    desc: "Tell the AI HOW to present its answer",
+    xpReward: 80,
+    lessonTitle: "Spell Ingredient #4: Specify the Format",
+    lessonBody: "A spell without a format is like ordering food without saying 'for here or to go!' Format tells the Oracle HOW to organize its answer — as a list, a story, step-by-step instructions, a table, a poem, bullet points, or a specific length. Format control makes answers actually useful for what you need!",
+    formula: "📋 Format Spell: <span>'...Please respond as [format], with [length/structure]'</span>\n✨ Example: <span>'Give me a step-by-step recipe for chocolate cake. Use numbered steps, keep it under 10 steps, and add a tip after each step.'</span>",
+    analogy1: { title: "Ordering a Pizza", body: "You say: thin crust, large, extra cheese, cut into 8 slices. Format is choosing how your answer is 'cut and served' to you.", hides: "Hides: Unlike pizza, you can ask for formats that are hard to read (e.g., all in one sentence with no spaces)." },
+    analogy2: { title: "Filing Cabinet", body: "Information in a filing cabinet is only useful if it's organized. Format tells the Oracle which 'drawer and label' to put information in.", hides: "Hides: Sometimes unstructured, flowing writing is better than rigid formats — it depends on the goal." },
+    mission: "The royal library needs to organize its knowledge! Write a prompt asking for information about a topic you're studying in school — but this time, specify EXACTLY how you want the answer formatted (list, steps, table, poem, etc.). Mention the topic AND the format!",
+    hint: "Pick a topic (animals, planets, history, math tricks...) and add format instructions like: 'Use bullet points', 'Give me a numbered list of 5 items', 'Respond as a fun poem', or 'Create a table with 3 columns: Name, Fact, Why It Matters'.",
+    examplePrompt: {
+      label: "Format Control Example:",
+      text: "Please explain the water cycle for a 6th grader. Format your response as follows: (1) A title, (2) A numbered list of the 4 main stages in order, (3) One sentence describing what happens in each stage, (4) A 'Fun Fact' section at the end with 2 surprising facts. Keep the whole response under 200 words.",
+      explain: "This prompt commands the exact structure: title, numbered list, one sentence per stage, separate fun facts section, word limit. The Oracle has zero guesswork about format!"
+    },
+    scoreKeys: ["Format Specified", "Structure Detail", "Length Control"],
+    simResponse: "📚 THE WATER CYCLE\n\nThe Four Main Stages:\n1. EVAPORATION — Heat from the sun turns liquid water from oceans and lakes into water vapor that rises into the air.\n2. CONDENSATION — As water vapor rises and cools down, it turns back into tiny water droplets that form clouds.\n3. PRECIPITATION — When water droplets in clouds become heavy enough, they fall back to Earth as rain, snow, sleet, or hail.\n4. COLLECTION — Water gathers in oceans, lakes, rivers, and underground, and the cycle begins again!\n\n🌊 FUN FACTS:\n• The water you drink today might have been dinosaur drool 65 million years ago — it's the same water cycling over and over!\n• Clouds are made of millions of tiny water droplets, but a single storm cloud can hold over 500,000 kilograms of water!"
+  },
+  {
+    id: 4,
+    icon: "🔁",
+    name: "The Iteration Lair",
+    skill: "Refine & Improve",
+    desc: "Level up your spell by improving it",
+    xpReward: 100,
+    lessonTitle: "Spell Ingredient #5: Iterate & Improve",
+    lessonBody: "Even master wizards rarely get the perfect spell on their first try! Iteration means looking at what you got, figuring out what was missing, and making the spell better. Real prompt engineers always refine their prompts. In this challenge, you'll see a BAD prompt and rewrite it using all your skills!",
+    formula: "🔁 Improve a Weak Spell:\n<span>Original: 'Write a story'</span>\n<span>Upgraded: 'You are a children's author. Write a 5-sentence adventure story about a girl who discovers she can talk to plants. Include one funny moment and end with a surprise.'</span>",
+    analogy1: { title: "Draft Revision", body: "Writers don't publish their first draft. Scientists don't publish after one experiment. Prompts are drafts — iteration is revision.", hides: "Hides: Sometimes iteration makes a prompt too long and complicated. Brevity can be powerful too." },
+    analogy2: { title: "Game Speedrunning", body: "Speedrunners try a level, see where they lose time, then adjust their route. Iteration is finding the 'time loss' in your prompt and fixing it.", hides: "Hides: Unlike speedrunning where there's one perfect route, there are many good prompts for any task — no single 'best' answer." },
+    mission: "Here is a WEAK spell someone cast: 'Help me study.' Your mission: REWRITE this prompt using all 5 ingredients — add a Role, Specificity, Context, and Format. Transform it from a weak cantrip into a MASTER spell!",
+    hint: "Upgrade checklist:\n🎭 Add a ROLE (tutor? teacher? game show host?)\n🎯 Add SPECIFICITY (what subject? what grade level?)\n📖 Add CONTEXT (why are you studying? when is the test?)\n📏 Add FORMAT (flashcards? quiz? summary?)\n📏 Add CONSTRAINTS (how long? how many questions?)",
+    examplePrompt: {
+      label: "Full Master Spell Example:",
+      text: "You are an enthusiastic 6th-grade study tutor who makes learning fun. I have a science test on ecosystems in 2 days. I understand the basics but I am confused about food webs vs food chains. Please help me study by: (1) Explaining the difference in 3 simple sentences, (2) Giving me a 5-question quiz to test my understanding, (3) Rating my conceptual readiness from 1-10 at the end. Keep your tone encouraging and use emojis.",
+      explain: "Role ✓, Specificity ✓ (ecosystems, food webs vs chains), Context ✓ (test in 2 days, what I know), Format ✓ (3 sentences + quiz + rating), Constraints ✓ (encouraging tone, emojis). MASTER SPELL! 🧙‍♂️"
+    },
+    scoreKeys: ["Role Added", "Specificity", "Context", "Format"],
+    simResponse: "🌟 MASTER SPELL ACTIVATED! 🌟\n\nYou've cast the strongest study spell I've seen! Here's what you conjured: You transformed 'Help me study' — 3 words with ZERO information — into a prompt with a role, subject, deadline, specific confusion point, structured format, and tone instructions. That's expert-level wizardry! 🧙‍♂️\n\nLet me give you a quick taste of what a well-prompted tutor would actually say:\n\n📚 FOOD CHAIN vs FOOD WEB (in 3 sentences):\nA food chain shows one straight path of energy transfer (grass → rabbit → fox). A food web shows ALL the connections in an ecosystem at once — multiple overlapping food chains showing the real complexity. If one species disappears, the food web shows which other species would be affected!\n\nYou're READY to ace that test! 🎉"
+  }
+];
+
+const LEVELS = [
+  {min:0, max:99, name:"Apprentice"},
+  {min:100, max:199, name:"Spellcaster"},
+  {min:200, max:349, name:"Enchanter"},
+  {min:350, max:499, name:"Archmage"},
+  {min:500, max:9999, name:"Grand Wizard"}
+];
+
+// ========== STATE ==========
+let state = {
+  playerName: "Wizard",
+  xp: 0,
+  completed: [],
+  currentQuest: null
+};
+
+function saveState() {
+  localStorage.setItem('pq_state', JSON.stringify(state));
+}
+
+function loadState() {
+  const s = localStorage.getItem('pq_state');
+  if (s) {
+    try { state = JSON.parse(s); } catch(e) {}
+  }
+}
+
+function getLevel() {
+  for (const l of LEVELS) {
+    if (state.xp >= l.min && state.xp <= l.max) return l;
+  }
+  return LEVELS[LEVELS.length - 1];
+}
+
+function getLevelNum() {
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (state.xp >= LEVELS[i].min && state.xp <= LEVELS[i].max) return i + 1;
+  }
+  return LEVELS.length;
+}
+
+// ========== NAV ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'map-screen') renderMap();
+}
+
+function startGame() {
+  const name = document.getElementById('heroName').value.trim();
+  if (!name) { alert('Please enter a wizard name!'); return; }
+  loadState();
+  state.playerName = name;
+  saveState();
+  showScreen('map-screen');
+}
+
+// ========== MAP ==========
+function renderMap() {
+  const lv = getLevel();
+  const lvNum = getLevelNum();
+  const maxXp = LEVELS[Math.min(lvNum - 1, LEVELS.length - 1)].max;
+  const minXp = LEVELS[Math.min(lvNum - 1, LEVELS.length - 1)].min;
+  const pct = Math.min(100, Math.round(((state.xp - minXp) / (maxXp - minXp + 1)) * 100));
+
+  document.getElementById('hud-name').textContent = '🧙 ' + state.playerName;
+  document.getElementById('hud-xp').textContent = state.xp;
+  document.getElementById('hud-xp-max').textContent = maxXp;
+  document.getElementById('xp-bar').style.width = pct + '%';
+  document.getElementById('level-badge').textContent = 'Level ' + lvNum + ' ' + lv.name;
+  document.getElementById('completed-count').textContent = state.completed.length;
+
+  const grid = document.getElementById('quest-grid');
+  grid.innerHTML = '';
+  QUESTS.forEach((q, i) => {
+    const done = state.completed.includes(q.id);
+    const locked = i > 0 && !state.completed.includes(QUESTS[i-1].id);
+    const card = document.createElement('div');
+    card.className = 'quest-card' + (locked ? ' locked' : '') + (done ? ' completed' : '');
+    card.innerHTML = `
+      ${locked ? '<div class="lock-icon">🔒</div>' : ''}
+      <span class="q-icon">${done ? '✅' : q.icon}</span>
+      <div class="q-name">${q.name}</div>
+      <div class="q-desc">${q.desc}</div>
+      <div class="q-tag ${done ? 'done' : locked ? 'locked-t' : 'ready'}">${done ? '✨ Cleared' : locked ? 'Locked' : '▶ Enter'}</div>
+    `;
+    if (!locked) card.onclick = () => openQuest(q.id);
+    grid.appendChild(card);
+  });
+}
+
+// ========== QUEST SCREEN ==========
+function openQuest(id) {
+  const q = QUESTS.find(x => x.id === id);
+  state.currentQuest = id;
+  saveState();
+
+  document.getElementById('q-screen-title').textContent = q.icon + ' ' + q.name;
+  document.getElementById('q-screen-sub').textContent = 'Skill: ' + q.skill;
+
+  // lesson
+  document.getElementById('lesson-card').innerHTML = `
+    <h3>📚 ${q.lessonTitle}</h3>
+    <p>${q.lessonBody}</p>
+    <div class="spell-box">${q.formula}</div>
+    <div class="anl-row">
+      <div class="anl-box">
+        <div class="anl-lbl">Analogy A: ${q.analogy1.title}</div>
+        <p>${q.analogy1.body}</p>
+        <p style="margin-top:.3rem;font-size:.72rem;color:#7a5fc8;">⚠️ What it hides: ${q.analogy1.hides}</p>
+      </div>
+      <div class="anl-box">
+        <div class="anl-lbl">Analogy B: ${q.analogy2.title}</div>
+        <p>${q.analogy2.body}</p>
+        <p style="margin-top:.3rem;font-size:.72rem;color:#7a5fc8;">⚠️ What it hides: ${q.analogy2.hides}</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('mission-text').textContent = q.mission;
+
+  // example tab
+  document.getElementById('example-prompt-box').innerHTML = `
+    <div style="font-size:.72rem;font-weight:800;color:#9b7ede;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;">${q.examplePrompt.label}</div>
+    <div style="background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.3);border-radius:8px;padding:.6rem .8rem;font-size:.85rem;color:#f0d880;line-height:1.6;margin-bottom:.5rem;font-style:italic;">"${q.examplePrompt.text}"</div>
+    <div style="font-size:.78rem;color:#c0b0e0;line-height:1.5;border-top:1px solid rgba(108,63,197,.2);padding-top:.5rem;">💡 ${q.examplePrompt.explain}</div>
+  `;
+
+  // reset ui
+  document.getElementById('prompt-input').value = '';
+  document.getElementById('char-cnt').textContent = '0 chars';
+  document.getElementById('hint-box').style.display = 'none';
+  document.getElementById('resp-panel').style.display = 'none';
+  document.getElementById('score-panel').style.display = 'none';
+  document.getElementById('cast-btn').disabled = false;
+  document.getElementById('cast-btn').textContent = '🪄 Cast Spell!';
+  switchTab('write');
+
+  showScreen('quest-screen');
+}
+
+function switchTab(tab) {
+  document.getElementById('tab-write-content').style.display = tab === 'write' ? 'block' : 'none';
+  document.getElementById('tab-ex-content').style.display = tab === 'example' ? 'block' : 'none';
+  document.getElementById('tab-write').classList.toggle('active', tab === 'write');
+  document.getElementById('tab-ex').classList.toggle('active', tab === 'example');
+}
+
+function updateCharCount() {
+  const v = document.getElementById('prompt-input').value.length;
+  document.getElementById('char-cnt').textContent = v + ' chars';
+}
+
+function showHint() {
+  const q = QUESTS.find(x => x.id === state.currentQuest);
+  const box = document.getElementById('hint-box');
+  box.style.display = 'block';
+  box.innerHTML = '🔮 <strong>Wizard Hint:</strong><br>' + q.hint.replace(/\n/g, '<br>');
+}
+
+// ========== CAST SPELL ==========
+async function castSpell() {
+  const q = QUESTS.find(x => x.id === state.currentQuest);
+  const prompt = document.getElementById('prompt-input').value.trim();
+  if (prompt.length < 10) { alert('Your spell needs more words! Write at least a sentence.'); return; }
+
+  const btn = document.getElementById('cast-btn');
+  btn.disabled = true;
+  btn.textContent = '✨ Casting...';
+
+  // show response panel with loading
+  const respPanel = document.getElementById('resp-panel');
+  const respText = document.getElementById('resp-text');
+  respPanel.style.display = 'block';
+  respText.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+  document.getElementById('score-panel').style.display = 'none';
+
+  // 50/50 real vs simulated for mix-of-both approach
+  const useReal = Math.random() > 0.5;
+
+  let aiResponse = '';
+  let scoreData = null;
+
+  if (useReal) {
+    try {
+      aiResponse = await callClaudeForResponse(q, prompt);
+    } catch(e) {
+      aiResponse = q.simResponse;
+    }
+  } else {
+    await sleep(1500);
+    aiResponse = q.simResponse;
+  }
+
+  respText.textContent = aiResponse;
+
+  // Now score the prompt
+  try {
+    scoreData = await callClaudeForScore(q, prompt);
+  } catch(e) {
+    scoreData = generateFallbackScore(q, prompt);
+  }
+
+  showScore(scoreData, q);
+  btn.textContent = '🪄 Spell Cast!';
+}
+
+async function callClaudeForResponse(q, prompt) {
+  const sysMsg = `You are an AI Oracle in a fantasy wizard game for 11-year-old students learning prompt engineering. 
+The student is on the "${q.name}" quest, learning about: ${q.skill}.
+Their mission: ${q.mission}
+Respond to their prompt in a helpful, slightly magical/fantasy tone. Keep response under 180 words. Be enthusiastic and age-appropriate.`;
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: sysMsg,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const data = await resp.json();
+  if (data.content && data.content[0]) return data.content[0].text;
+  throw new Error('No response');
+}
+
+async function callClaudeForScore(q, prompt) {
+  const sysMsg = `You are a prompt engineering teacher evaluating a 6th grader's prompt for a game.
+Quest: "${q.name}" — Skill being taught: ${q.skill}
+Score keys: ${q.scoreKeys.join(', ')}
+Student's mission: ${q.mission}
+
+Score the prompt on each key from 0-100. Return ONLY valid JSON in this exact format:
+{"scores":{"${q.scoreKeys[0]}":75,"${q.scoreKeys[1]}":60,"${q.scoreKeys[2]}":80},"total":72,"feedback":"2-3 sentence encouraging feedback explaining what was great and one thing to improve. Be specific and friendly."}
+
+Be generous but honest. Even simple prompts should score at least 20-40 per category if the student tried.`;
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      system: sysMsg,
+      messages: [{ role: "user", content: "Rate this student prompt: " + prompt }]
+    })
+  });
+  const data = await resp.json();
+  if (data.content && data.content[0]) {
+    try {
+      const txt = data.content[0].text.replace(/```json|```/g, '').trim();
+      return JSON.parse(txt);
+    } catch(e) {}
+  }
+  throw new Error('parse fail');
+}
+
+function generateFallbackScore(q, prompt) {
+  const len = prompt.length;
+  const base = Math.min(85, Math.max(35, 40 + Math.floor(len / 3)));
+  const scores = {};
+  q.scoreKeys.forEach((k, i) => { scores[k] = Math.min(100, base - i * 5 + Math.floor(Math.random() * 15)); });
+  const total = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / q.scoreKeys.length);
+  return {
+    scores,
+    total,
+    feedback: total >= 70
+      ? "Great spell! You included good detail and your prompt was clear. Next time, try adding even more specifics to level up your score!"
+      : "Good start! Your prompt shows you understand the mission. Try adding more detail about WHO should respond, WHAT exactly you want, and HOW it should be formatted."
+  };
+}
+
+function showScore(data, q) {
+  document.getElementById('score-panel').style.display = 'block';
+  document.getElementById('total-score-disp').textContent = data.total + '/100';
+  document.getElementById('feedback-text').textContent = data.feedback;
+
+  const barColors = ['#6c3fc5', '#f5c842', '#3fc57a', '#e8a800'];
+  const grid = document.getElementById('crit-grid');
+  grid.innerHTML = '';
+  Object.entries(data.scores).forEach(([key, val], i) => {
+    const item = document.createElement('div');
+    item.className = 'crit-item';
+    item.innerHTML = `
+      <div class="crit-lbl">${key}</div>
+      <div class="crit-bar-wrap"><div class="crit-bar" style="width:0%;background:${barColors[i % barColors.length]}" data-w="${val}"></div></div>
+      <div class="crit-val">${val}/100</div>
+    `;
+    grid.appendChild(item);
+  });
+  setTimeout(() => {
+    grid.querySelectorAll('.crit-bar').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }, 100);
+
+  if (data.total >= 60 && !state.completed.includes(q.id)) {
+    awardXP(q);
+  }
+}
+
+function awardXP(q) {
+  state.completed.push(q.id);
+  state.xp += q.xpReward;
+  saveState();
+
+  const lv = getLevel();
+  const lvNum = getLevelNum();
+  document.getElementById('cel-emoji').textContent = '🎉';
+  document.getElementById('cel-title').textContent = 'Dungeon Cleared!';
+  document.getElementById('cel-sub').textContent = q.icon + ' ' + q.name + ' complete! You are now Level ' + lvNum + ' ' + lv.name + '.';
+  document.getElementById('xp-gained-txt').textContent = '+' + q.xpReward + ' XP Earned!';
+  document.getElementById('cel-overlay').classList.add('show');
+}
+
+function dismissCelebration() {
+  document.getElementById('cel-overlay').classList.remove('show');
+}
+
+function tryAgain() {
+  document.getElementById('prompt-input').value = '';
+  document.getElementById('char-cnt').textContent = '0 chars';
+  document.getElementById('resp-panel').style.display = 'none';
+  document.getElementById('score-panel').style.display = 'none';
+  document.getElementById('hint-box').style.display = 'none';
+  const btn = document.getElementById('cast-btn');
+  btn.disabled = false;
+  btn.textContent = '🪄 Cast Spell!';
+  window.scrollTo(0, 0);
+}
+
+function nextQuest() {
+  const next = QUESTS.find(q => !state.completed.includes(q.id));
+  if (next) openQuest(next.id);
+  else showScreen('map-screen');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ========== INIT ==========
+loadState();
+if (state.playerName && state.playerName !== 'Wizard') {
+  document.getElementById('heroName').value = state.playerName;
+}
+</script>
+</body>
+</html>
